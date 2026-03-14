@@ -1,4 +1,4 @@
-# Personal Learning System
+# Kite
 
 A personal learning system powered by [Claude Code](https://docs.anthropic.com/en/docs/claude-code). No scripts, no dependencies — just open Claude Code in this repo and start talking.
 
