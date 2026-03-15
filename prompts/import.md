@@ -29,9 +29,18 @@ The user will paste a YAML block with the header `# DISCUSSION EXTRACT` containi
   - **New**: no match found → will be added as a new node
 - Rewrite `depends_on` references to use the matched existing node IDs.
 
-### 2. Present for Review
+### 2. Cap and Validate Levels
 
-Show a clear summary with your matching decisions:
+Discussion-based assessments cannot produce expert-level ratings. Apply these rules:
+
+- **Default cap: level 2** (Working Knowledge). Any `my_level` > 2 is capped to 2.
+- **Level 4 is never allowed** from a discussion import, even with user override.
+- **Level 3 override**: The user can explicitly override individual topics up to level 3 during review, but they must confirm each one.
+- Track the original level alongside the capped level so it can be shown in the review.
+
+### 3. Present for Review
+
+Show a clear summary with your matching decisions. When a level was capped, show the original level:
 
 ```
 Discussion: [summary]
@@ -39,19 +48,19 @@ Parent topic: [parent_topic name]
 Date: [date]
 
 Matched to existing nodes (will update skill level):
-  1. generics_and_constraints → typescript_generics — Level update to 3
-  2. mapped_types_and_modifiers → mapped_types — Level update to 4
+  1. generics_and_constraints → typescript_generics — Level 2 (capped from 3)
+  2. mapped_types_and_modifiers → mapped_types — Level 2 (capped from 4)
 
 New topics to add:
   3. satisfies_operator (difficulty: 3) — description
-     Your level: 4 — notes
-  4. template_literal_types (difficulty: 4) — description
-     Your level: 3 — notes
+     Level: 2 (capped from 4) — notes
+  4. template_literal_types (difficulty: 2) — description
+     Level: 2 — notes
 ```
 
-Ask the user to confirm. They can accept all, pick specific ones, correct any matches, or modify details.
+Ask the user to confirm. They can accept all, pick specific ones, correct any matches, or modify details. Mention that they can override individual topics up to level 3 if they believe a higher level is warranted — but level 4 is never allowed from a discussion import.
 
-### 3. Add Confirmed Topics
+### 4. Add Confirmed Topics
 
 For each confirmed new topic:
 
@@ -73,26 +82,27 @@ For each confirmed new topic:
 3. **Record skill level in `skills.yaml`**:
    ```yaml
    topic_id:
-     level: <my_level from extract>
+     level: <capped my_level, after any user overrides>
      confidence: 0.5
      last_tested: <date from extract>
    ```
-   Use confidence 0.5 since the level is estimated from discussion, not a formal quiz.
+   Use confidence 0.5 since the level is estimated from discussion, not a formal quiz. Always use the capped level (after any user overrides), never the original extract level.
 
 4. **Append to `learning-log.md`**:
    ```
-   - **topic_name**: Level 0 -> <my_level> (confidence: 0.50)
+   - **topic_name**: Level 0 -> <capped_level> (confidence: 0.50)
      Notes: Imported from discussion extract. <notes from extract>
    ```
 
-### 4. Handle Existing Topics
+### 5. Handle Existing Topics
 
 For topics that already exist in the graph:
-- Only update `skills.yaml` if the extracted `my_level` is higher than the current level.
+- Only update `skills.yaml` if the capped `my_level` is higher than the current level.
+- The same cap rules apply: cap at 2 by default, allow user override up to 3, never allow 4.
 - Use confidence 0.5 for discussion-based assessments.
 - Log the update in `learning-log.md`.
 
-### 5. Confirm Completion
+### 6. Confirm Completion
 
 Show a summary of what was added/updated and suggest next steps:
 - "Take a quiz on [topic] to get a formal assessment"
