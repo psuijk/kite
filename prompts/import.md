@@ -29,7 +29,26 @@ The user will paste a YAML block with the header `# DISCUSSION EXTRACT` containi
   - **New**: no match found → will be added as a new node
 - Rewrite `depends_on` references to use the matched existing node IDs.
 
-### 2. Cap and Validate Levels
+### 2. Evaluate Graph Placement
+
+Before validating levels, evaluate where each new topic belongs structurally. Apply the Graph Organization Principles from `CLAUDE.md`:
+
+**2a. Check parent specificity** — Is `parent_topic` the right abstraction level? If it's too broad (e.g., `nodejs` for framework-specific topics) or too narrow (e.g., a comparison node), identify the correct parent. Create a container node if needed.
+
+**2b. Identify container nodes** — If the extract contains 2+ topics that share a narrower scope than `parent_topic`, propose an intermediate container. For example, if importing Express and Hono topics under `nodejs`, propose a `node_web_frameworks` container.
+
+**2c. Classify scope** — For each topic, determine its inherent scope:
+- **Runtime-specific**: tied to a particular runtime (e.g., Express middleware configuration → `express`)
+- **Runtime-agnostic**: a general concept applicable across runtimes (e.g., middleware pattern → `web_development` or `http`)
+- **Protocol-level**: tied to a protocol, not a framework (e.g., HTTP status codes → `http`)
+
+If a topic's scope differs from its proposed parent's scope, move it under the appropriate scope parent and add a `related` edge back.
+
+**2d. Split comparisons** — If any topic is a comparison ("X vs Y"), split it into separate nodes for X and Y under a shared parent, with `related` edges between them.
+
+**2e. Document restructuring** — Collect all proposed structural changes (new container nodes, reparenting, scope moves, splits) to present in the review step.
+
+### 3. Cap and Validate Levels
 
 Discussion-based assessments cannot produce expert-level ratings. Apply these rules:
 
@@ -38,9 +57,21 @@ Discussion-based assessments cannot produce expert-level ratings. Apply these ru
 - **Level 3 override**: The user can explicitly override individual topics up to level 3 during review, but they must confirm each one.
 - Track the original level alongside the capped level so it can be shown in the review.
 
-### 3. Present for Review
+### 4. Present for Review
 
-Show a clear summary with your matching decisions. When a level was capped, show the original level:
+If Step 2 produced any restructuring proposals (new container nodes, reparented topics, scope moves, or split comparisons), show them first:
+
+```
+Graph restructuring proposed:
+  - Create container node: node_web_frameworks (under nodejs)
+  - Move express, hono under node_web_frameworks (instead of directly under nodejs)
+  - Reparent http_middleware under http (runtime-agnostic), add related: [express, hono]
+  - Split hono_vs_express into separate hono and express nodes
+```
+
+Ask the user to confirm the restructuring before showing the topic list. If they reject or modify the restructuring, adjust the topic placements accordingly.
+
+Then show a clear summary with your matching decisions. When a level was capped, show the original level:
 
 ```
 Discussion: [summary]
@@ -60,11 +91,13 @@ New topics to add:
 
 Ask the user to confirm. They can accept all, pick specific ones, correct any matches, or modify details. Mention that they can override individual topics up to level 3 if they believe a higher level is warranted — but level 4 is never allowed from a discussion import.
 
-### 4. Add Confirmed Topics
+### 5. Add Confirmed Topics
 
-For each confirmed new topic:
+For each confirmed new topic, using the restructured placement (not necessarily the extract's original `parent_topic`):
 
-1. **Add to `knowledge-graph.yml`** as a new node:
+1. **Add container nodes first** — If restructuring introduced container nodes, add them to `knowledge-graph.yml` before their children. Container nodes use `type: category`.
+
+2. **Add topic nodes to `knowledge-graph.yml`**:
    ```yaml
    topic_id:
      name: Topic Name
@@ -74,12 +107,12 @@ For each confirmed new topic:
      description: <from extract>
      depends_on: <from extract, validated>
      children: []
-     related: []
+     related: <include any related edges from restructuring>
    ```
 
-2. **Add the topic ID to the parent's `children` list** (if not already there).
+3. **Add the topic ID to the restructured parent's `children` list** (not necessarily the extract's `parent_topic`).
 
-3. **Record skill level in `skills.yaml`**:
+4. **Record skill level in `skills.yaml`**:
    ```yaml
    topic_id:
      level: <capped my_level, after any user overrides>
@@ -88,13 +121,13 @@ For each confirmed new topic:
    ```
    Use confidence 0.5 since the level is estimated from discussion, not a formal quiz. Always use the capped level (after any user overrides), never the original extract level.
 
-4. **Append to `learning-log.md`**:
+5. **Append to `learning-log.md`**:
    ```
    - **topic_name**: Level 0 -> <capped_level> (confidence: 0.50)
      Notes: Imported from discussion extract. <notes from extract>
    ```
 
-### 5. Handle Existing Topics
+### 6. Handle Existing Topics
 
 For topics that already exist in the graph:
 - Only update `skills.yaml` if the capped `my_level` is higher than the current level.
@@ -102,7 +135,7 @@ For topics that already exist in the graph:
 - Use confidence 0.5 for discussion-based assessments.
 - Log the update in `learning-log.md`.
 
-### 6. Confirm Completion
+### 7. Confirm Completion
 
 Show a summary of what was added/updated and suggest next steps:
 - "Take a quiz on [topic] to get a formal assessment"

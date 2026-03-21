@@ -20,6 +20,10 @@ Propose new subtopics to deepen coverage of an existing topic in the knowledge g
   - **type**: Usually `concept`
   - **difficulty**: Appropriate difficulty level (1-4)
   - **description**: 1 sentence describing the subtopic
+- Apply Graph Organization Principles (from `CLAUDE.md`) to proposed subtopics:
+  - If proposing 2+ subtopics that share a narrower scope than the parent, create an intermediate container node to group them.
+  - **Future growth test**: for each proposed subtopic, ask "if I learn a sibling technology later, would this need restructuring?" If yes, add a container node now.
+  - **Scope check**: if a subtopic's inherent scope differs from the parent (e.g., a protocol-level concept under a framework node), place it under the appropriate scope parent and use `related` to link back.
 
 ### 3. Present to User
 
